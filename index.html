@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ka">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Survival Logic - Squid Game</title>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Rubik:wght@400;700;900&display=swap");
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: #111;
+                background-image: radial-gradient(
+                    circle at center,
+                    #2a2a35 0%,
+                    #08080a 100%
+                );
+                font-family: "Rubik", sans-serif;
+                color: #e0e0e0;
+                display: flex;
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            .editor-panel {
+                width: 40%;
+                background: #1a1a24;
+                border-right: 3px solid #ff0055;
+                padding: 30px;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+                z-index: 10;
+            }
+
+            .header-box {
+                margin-bottom: 20px;
+            }
+
+            .header-box h1 {
+                color: #ff0055;
+                margin: 0 0 5px 0;
+                font-size: 2rem;
+                text-transform: uppercase;
+                text-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+            }
+
+            .header-box p {
+                color: #00a884;
+                font-family: "Roboto Mono", monospace;
+                margin-top: 0;
+                font-size: 0.9rem;
+            }
+
+            .code-container {
+                flex-grow: 1;
+                display: flex;
+                flex-direction: column;
+                background: #0d0d12;
+                border: 1px solid #333;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .code-header {
+                background: #222;
+                padding: 10px 15px;
+                font-family: "Roboto Mono", monospace;
+                font-size: 0.9rem;
+                color: #aaa;
+                border-bottom: 1px solid #333;
+            }
+
+            textarea#user-code {
+                flex-grow: 1;
+                background: #0d0d12;
+                color: #00ffcc;
+                font-family: "Courier New", Courier, monospace;
+                font-size: 1.1rem;
+                border: none;
+                padding: 20px;
+                resize: none;
+                outline: none;
+                line-height: 1.6;
+                tab-size: 4;
+            }
+
+            .code-footer {
+                background: #222;
+                padding: 10px 15px;
+                font-family: "Roboto Mono", monospace;
+                font-size: 0.9rem;
+                color: #aaa;
+                border-top: 1px solid #333;
+            }
+
+            .controls {
+                margin-top: 20px;
+                display: flex;
+                gap: 15px;
+            }
+
+            button {
+                flex: 1;
+                padding: 15px;
+                font-size: 1.1rem;
+                font-weight: bold;
+                text-transform: uppercase;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-family: "Rubik", sans-serif;
+            }
+
+            #btn-run {
+                background-color: #ff0055;
+                color: #fff;
+                box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
+            }
+            #btn-run:hover {
+                background-color: #ff3377;
+                box-shadow: 0 0 25px rgba(255, 0, 85, 0.6);
+            }
+
+            #btn-reset {
+                background-color: #333;
+                color: #fff;
+            }
+            #btn-reset:hover {
+                background-color: #555;
+            }
+
+            .error-msg {
+                color: #ff4444;
+                margin-top: 10px;
+                font-family: "Roboto Mono", monospace;
+                font-size: 0.9rem;
+                min-height: 20px;
+            }
+
+            .game-panel {
+                width: 60%;
+                position: relative;
+                background: repeating-linear-gradient(
+                    0deg,
+                    #1a1a24,
+                    #1a1a24 40px,
+                    #15151d 40px,
+                    #15151d 80px
+                );
+            }
+
+            canvas#arena {
+                width: 100%;
+                height: 100%;
+                display: block;
+            }
+
+            #timer-display {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                font-size: 2rem;
+                font-weight: 900;
+                color: #ff0055;
+                font-family: "Roboto Mono", monospace;
+                text-shadow: 0 0 10px rgba(255, 0, 85, 0.8);
+            }
+
+            #game-status {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 4rem;
+                font-weight: 900;
+                text-transform: uppercase;
+                text-align: center;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.3s;
+                text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            }
+            .status-win {
+                color: #00a884;
+            }
+            .status-lose {
+                color: #ff0055;
+            }
+        </style>
+    </head>
+    <body>
+        <audio id="bg-music" loop>
+            <source src="assets/soundtrack.mp3" type="audio/mpeg" />
+        </audio>
+        <audio id="audio-red">
+            <source src="assets/red.mp3" type="audio/mpeg" />
+        </audio>
+        <audio id="audio-green">
+            <source src="assets/green.mp3" type="audio/mpeg" />
+        </audio>
+
+        <img id="img-shooter" src="assets/shooter.png" style="display: none" />
+
+        <div class="editor-panel">
+            <div class="header-box">
+                <h1>კალმარის თამაში</h1>
+                <p>// შექმენი შენი გადარჩენის ლოგიკა</p>
+            </div>
+
+            <div class="code-container">
+                <div class="code-header">
+                    function decideAction(light, timeLeft) {
+                </div>
+                <textarea id="user-code" spellcheck="false">
+// შენ გაქვს ორი ცვლადი:
+// 1. light     - შუქის ფერი ("Red" ან "Green")
+// 2. timeLeft  - დარჩენილი დრო წამებში (მაგ: 14)
+
+// შენ შეგიძლია დააბრუნო სამი ბრძანებიდან ერთ-ერთი:
+// დააბრუნე "stop";   // გაჩერება
+// დააბრუნე "move";   // ჩვეულებრივი სვლა
+// დააბრუნე "sprint"; // 2x სიჩქარით სირბილი
+
+// დაწერე შენი მარტივი if / else if / else ლოგიკა ქვემოთ:
+
+</textarea
+                >
+                <div class="code-footer">}</div>
+            </div>
+
+            <div id="error-box" class="error-msg"></div>
+
+            <div class="controls">
+                <button id="btn-run">▶ გაშვება</button>
+                <button id="btn-reset">↺ რესტარტი</button>
+            </div>
+        </div>
+
+        <div class="game-panel">
+            <div id="timer-display">01:00</div>
+            <canvas id="arena"></canvas>
+            <div id="game-status"></div>
+        </div>
+
+        <script>
+            const canvas = document.getElementById("arena");
+            const ctx = canvas.getContext("2d");
+            const runBtn = document.getElementById("btn-run");
+            const resetBtn = document.getElementById("btn-reset");
+            const codeInput = document.getElementById("user-code");
+            const errorBox = document.getElementById("error-box");
+            const statusBox = document.getElementById("game-status");
+            const timerDisplay = document.getElementById("timer-display");
+
+            const bgMusic = document.getElementById("bg-music");
+            const audioRed = document.getElementById("audio-red");
+            const audioGreen = document.getElementById("audio-green");
+            const imgShooter = document.getElementById("img-shooter");
+
+            function resize() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            window.addEventListener("resize", resize);
+            resize();
+
+            let gameLoop;
+            let isPlaying = false;
+            let lightStatus = "Red";
+            let lastLightChange = 0;
+            let lightDuration = 2000;
+            let timeLeft = 60;
+            let lastTimeTick = 0;
+
+            let players = [];
+            let finishLineY = 150;
+            let customLogic = null;
+            let activeLasers = [];
+
+            function initPlayers() {
+                players = [];
+                const numPlayers = 10;
+                const spacing = canvas.width / (numPlayers + 1);
+
+                for (let i = 0; i < numPlayers; i++) {
+                    players.push({
+                        id: i,
+                        isUser: i === 4,
+                        x: spacing * (i + 1),
+                        y: canvas.height - 80 + (Math.random() * 30 - 15),
+                        speed: 0.15 + Math.random() * 0.1,
+                        state: "alive",
+                        action: "stop",
+                        greenDelay: Math.random() * 800,
+                        willFailThisRed: false,
+                        failDelay: 0,
+                    });
+                }
+            }
+
+            function drawArena() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = "#ff0055";
+                ctx.fillRect(0, finishLineY, canvas.width, 5);
+
+                let shooterX = canvas.width / 2;
+                let shooterY = 100;
+
+                if (imgShooter.complete && imgShooter.naturalHeight !== 0) {
+                    ctx.drawImage(
+                        imgShooter,
+                        shooterX - 40,
+                        shooterY - 40,
+                        80,
+                        80,
+                    );
+                } else {
+                    ctx.fillStyle = "#fff";
+                    ctx.beginPath();
+                    ctx.arc(shooterX, shooterY, 30, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = lightStatus === "Green" ? "#00ffcc" : "#333";
+                ctx.beginPath();
+                ctx.arc(shooterX - 30, shooterY - 60, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = lightStatus === "Red" ? "#ff0055" : "#333";
+                ctx.beginPath();
+                ctx.arc(shooterX + 30, shooterY - 60, 15, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.font = "30px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+
+                players.forEach((p) => {
+                    let emoji = "🏃‍♂️";
+                    if (p.state === "dead") emoji = "💀";
+                    else if (p.state === "won") emoji = "🏆";
+
+                    if (p.isUser && p.state === "alive") {
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = "#0088ff";
+                        ctx.fillStyle = "rgba(0, 136, 255, 0.3)";
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y + 15, 20, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+
+                    ctx.fillText(emoji, p.x, p.y);
+
+                    ctx.fillStyle = p.isUser ? "#0088ff" : "#888";
+                    ctx.font = "12px Roboto Mono";
+                    ctx.fillText(
+                        p.isUser ? "PLAYER" : `00${p.id}`,
+                        p.x,
+                        p.y + 25,
+                    );
+                });
+
+                activeLasers.forEach((laser) => {
+                    ctx.strokeStyle = "#ff0055";
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(shooterX, shooterY);
+                    ctx.lineTo(laser.targetX, laser.targetY);
+                    ctx.stroke();
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = "#ff0055";
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                });
+                activeLasers = [];
+            }
+
+            function update(timestamp) {
+                if (!isPlaying) return;
+
+                if (timestamp - lastTimeTick >= 1000) {
+                    timeLeft--;
+                    let displayMins = Math.floor(timeLeft / 60);
+                    let displaySecs = timeLeft % 60;
+                    timerDisplay.innerText =
+                        "0" +
+                        displayMins +
+                        ":" +
+                        (displaySecs < 10 ? "0" : "") +
+                        displaySecs;
+                    lastTimeTick = timestamp;
+
+                    if (timeLeft <= 0) {
+                        gameOver(false, "დრო ამოიწურა!");
+                        return;
+                    }
+                }
+
+                if (timestamp - lastLightChange > lightDuration) {
+                    lightStatus = lightStatus === "Red" ? "Green" : "Red";
+                    lastLightChange = timestamp;
+
+                    if (lightStatus === "Red") {
+                        lightDuration = Math.random() * 2000 + 3000;
+                        audioGreen.pause();
+                        audioRed.volume = 1.0;
+                        audioRed.currentTime = 0;
+                        audioRed.play().catch((e) => console.log(e));
+                    } else {
+                        lightDuration = Math.random() * 3000 + 2000;
+                        audioRed.pause();
+                        audioGreen.volume = 1.0;
+                        audioGreen.currentTime = 0;
+                        audioGreen.play().catch((e) => console.log(e));
+                    }
+
+                    players.forEach((p) => {
+                        if (!p.isUser) {
+                            p.greenDelay = Math.random() * 800;
+                            p.willFailThisRed = Math.random() > 0.85;
+                            p.failDelay = 2000 + Math.random() * 1000;
+                        }
+                    });
+                }
+
+                let alivePlayers = 0;
+                let timeInLight = timestamp - lastLightChange;
+                let isLethal = lightStatus === "Red" && timeInLight > 2000;
+
+                players.forEach((p) => {
+                    if (p.state !== "alive") return;
+                    alivePlayers++;
+
+                    if (p.isUser) {
+                        try {
+                            p.action = customLogic(lightStatus, timeLeft);
+                        } catch (e) {
+                            p.action = "error";
+                        }
+                    } else {
+                        if (lightStatus === "Green") {
+                            if (timeInLight > p.greenDelay) {
+                                p.action = timeLeft <= 10 ? "sprint" : "move";
+                            } else {
+                                p.action = "stop";
+                            }
+                        } else {
+                            if (
+                                p.willFailThisRed &&
+                                timeInLight > p.failDelay
+                            ) {
+                                p.action = "move";
+                            } else {
+                                p.action = "stop";
+                            }
+                        }
+                    }
+
+                    if (
+                        isLethal &&
+                        (p.action === "move" || p.action === "sprint")
+                    ) {
+                        p.state = "dead";
+                        activeLasers.push({ targetX: p.x, targetY: p.y });
+                        if (p.isUser) {
+                            gameOver(false, "მოძრაობა წითელ შუქზე!");
+                            return;
+                        }
+                    } else if (p.action === "move") {
+                        p.y -= p.speed;
+                    } else if (p.action === "sprint") {
+                        p.y -= p.speed * 2;
+                    }
+
+                    if (p.y <= finishLineY) {
+                        p.state = "won";
+                        if (p.isUser) {
+                            gameOver(true, "თქვენ გადარჩით!");
+                            return;
+                        }
+                    }
+                });
+
+                if (isPlaying && alivePlayers === 0) {
+                    gameOver(false, "ყველა გამოთიშულია!");
+                    return;
+                }
+
+                drawArena();
+                if (isPlaying) {
+                    gameLoop = requestAnimationFrame(update);
+                }
+            }
+
+            function gameOver(isWin, message) {
+                isPlaying = false;
+                statusBox.innerHTML = isWin
+                    ? message
+                    : `გამოთიშულია<br><span style='font-size:1.5rem'>${message}</span>`;
+                statusBox.className = isWin ? "status-win" : "status-lose";
+                statusBox.style.opacity = 1;
+
+                bgMusic.pause();
+                audioRed.pause();
+                audioGreen.pause();
+
+                drawArena();
+            }
+
+            runBtn.addEventListener("click", () => {
+                errorBox.innerText = "";
+                let code = codeInput.value;
+
+                try {
+                    customLogic = new Function("light", "timeLeft", code);
+                    customLogic("Red", 10);
+                } catch (err) {
+                    errorBox.innerText = "სინტაქსის შეცდომა: " + err.message;
+                    return;
+                }
+
+                bgMusic.volume = 0.3;
+                bgMusic.play().catch((e) => console.log(e));
+
+                resetGame();
+                isPlaying = true;
+                statusBox.style.opacity = 0;
+                lastTimeTick = performance.now();
+                lastLightChange = performance.now();
+
+                lightStatus = "Green";
+                audioGreen.volume = 1.0;
+                audioGreen.currentTime = 0;
+                audioGreen.play().catch((e) => console.log(e));
+
+                gameLoop = requestAnimationFrame(update);
+            });
+
+            resetBtn.addEventListener("click", () => {
+                resetGame();
+                statusBox.style.opacity = 0;
+                errorBox.innerText = "";
+                bgMusic.pause();
+                bgMusic.currentTime = 0;
+                audioRed.pause();
+                audioGreen.pause();
+            });
+
+            function resetGame() {
+                cancelAnimationFrame(gameLoop);
+                isPlaying = false;
+                lightStatus = "Red";
+                timeLeft = 70;
+                timerDisplay.innerText = "01:00";
+                activeLasers = [];
+                initPlayers();
+                drawArena();
+            }
+
+            initPlayers();
+            drawArena();
+        </script>
+    </body>
+</html>
