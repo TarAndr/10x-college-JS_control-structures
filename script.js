@@ -54,3 +54,42 @@ for(let i = MIN_NUM; i <= num; ++i) {
     factorial *= i;
 }
 console.log(`Factorial of ${num} is ${factorial}`);
+
+console.log('\n\t8. ვარსკვლავების სამკუთხედი');
+let SYMB = '*';
+MIN_NUM = 1;
+MAX_NUM = 11;
+for(let i = MIN_NUM; i <= MAX_NUM; ++i) {
+    let row = '';
+    for(let j = 1; j <= i; ++j) {
+        row += SYMB;
+    }
+    console.log(row);
+}
+
+console.log('\n\t9. ვარსკვლავების სამკუთხედი (მეორე ვერსია)');
+SYMB = '*';
+MIN_NUM = 1;
+MAX_NUM = 11;
+for(let i = MIN_NUM; i <= MAX_NUM; ++i) {
+    let row = '';
+    for(let j = 1; j <= MAX_NUM - i; ++j) {
+        row += SYMB;
+    }
+    console.log(row);
+}
+
+console.log('\n\t10. ნაძვის ხე');
+SYMB = '*';
+MIN_NUM = 1;
+MAX_NUM = 11;
+for(let i = MIN_NUM; i <= MAX_NUM; ++i) {
+    let row = '';
+    for(let j = 1; j <= MAX_NUM - i; ++j) {
+        row += ' ';
+    }
+    for(let k = 1; k <= i * 2 - 1; ++k) {
+        row += SYMB;
+    }
+    console.log(row);
+}
